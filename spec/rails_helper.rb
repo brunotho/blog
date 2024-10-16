@@ -30,6 +30,9 @@ require 'rspec/rails'
 
 # Checks for pending migrations and applies them before tests are run.
 # If you are not using ActiveRecord, you can remove these lines.
+
+Dir[Rails.root.join('spec', 'support', '**', '*.rb')].sort.each { |f| require f }
+
 Shoulda::Matchers.configure do |config|
   config.integrate do |with|
     with.test_framework :rspec
@@ -43,13 +46,64 @@ rescue ActiveRecord::PendingMigrationError => e
   abort e.to_s.strip
 end
 RSpec.configure do |config|
+  # config.before(:each, type: :system) do
+  #   driven_by :rack_test
+  # end
+
   config.before(:each, type: :system) do
-    driver = :selenium_chrome_headless
-    driver = :selenium_chrome if ENV['SHOW_CHROME']
-    driven_by(driver)
+    options = Selenium::WebDriver::Chrome::Options.new
+    options.add_argument("--disable-search-engine-choice-screen")
+    options.add_argument("--disable-gpu")
+    options.add_argument("--ignore-certificate-errors")
+    options.add_argument("--disable-translate")
+    options.add_argument("--headless") unless ENV['SHOW_CHROME']
+
+    Capybara.register_driver :custom_selenium_chrome do |app|
+      Capybara::Selenium::Driver.new(app, browser: :chrome, options: options)
+    end
+
+    driven_by :custom_selenium_chrome
   end
 
+  config.include SystemHelpers, type: :system
+
+  # config.after(:each, type: :system, js: true) do
+  #   errors = page.driver.browser.manage.logs.get(:browser)
+  #   if errors.present?
+  #     aggregate_failures 'javascript errors' do
+  #       errors.each do |error|
+  #         expect(error.level).not_to eq('SEVERE'), error.message
+  #         next unless error.level == 'WARNING'
+  #         STDERR.puts 'WARN: javascript warning'
+  #         STDERR.puts error.message
+  #       end
+  #     end
+  #   end
+  # end
+
+  # config.before(:suite) do
+  #   DatabaseCleaner.clean_with(:truncation)
+  # end
+
+  # config.before(:each) do
+  #   DatabaseCleaner.strategy = :transaction
+  # end
+
+  # config.before(:each, type: :system) do
+  #   DatabaseCleaner.strategy = :truncation
+  # end
+
+  # config.before(:each) do
+  #   DatabaseCleaner.start
+  # end
+
+  # config.after(:each) do
+  #   DatabaseCleaner.clean
+  # end
+
   config.include FactoryBot::Syntax::Methods
+
+  # Capybara.default_max_wait_time = 10
 
   # Remove this line if you're not using ActiveRecord or ActiveRecord fixtures
   config.fixture_paths = [

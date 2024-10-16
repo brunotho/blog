@@ -385,6 +385,7 @@ DEPENDENCIES
   rspec-rails
   rubocop-rails-omakase
   sassc-rails (~> 2.1)
+  selenium-webdriver
   shoulda-matchers
   sprockets-rails
   stimulus-rails
